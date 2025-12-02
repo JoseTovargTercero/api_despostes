@@ -42,17 +42,6 @@
             </div>
 
             <!-- Comprobante -->
-            <div>
-                <label class="block text-gray-700 font-medium mb-1">Comprobante (Imagen/PDF)</label>
-                <input
-                    type="file"
-                    id="comprobante"
-                    name="comprobante"
-                    accept="image/*,application/pdf"
-                    class="w-full text-gray-600"
-                    required>
-            </div>
-
             <!-- Vista previa -->
             <div id="previewContainer" class="hidden mt-3">
                 <p class="text-gray-600 mb-2">Vista previa:</p>
@@ -76,21 +65,7 @@
 const deviceId = new URLSearchParams(window.location.search).get("id");
 document.getElementById("deviceIdValue").innerText = deviceId ?? "(No recibido)";
 
-// Vista previa del comprobante
-document.getElementById("comprobante").addEventListener("change", function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
 
-    const preview = document.getElementById("previewImage");
-    const previewContainer = document.getElementById("previewContainer");
-
-    if (file.type.includes("image")) {
-        preview.src = URL.createObjectURL(file);
-        previewContainer.classList.remove("hidden");
-    } else {
-        previewContainer.classList.add("hidden");
-    }
-});
 
 // Enviar formulario vía POST
 document.getElementById("uploadForm").addEventListener("submit", async function (e) {
@@ -99,7 +74,7 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
     const formData = new FormData();
     formData.append("device_id", deviceId);
     formData.append("transaccion", document.getElementById("transaccion").value);
-    formData.append("comprobante", document.getElementById("comprobante").files[0]);
+    
 
     const msg = document.getElementById("msg");
     msg.innerText = "Enviando...";
