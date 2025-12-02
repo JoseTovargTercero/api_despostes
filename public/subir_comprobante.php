@@ -2,24 +2,74 @@
 header("Content-Type: application/json");
 require_once "../config/db.php";
 
-if (!isset($_POST["device_id"]) || !isset($_FILES["file"])) {
-    echo json_encode(["error" => "Faltan datos"]);
+$db = new DB();
+$cn = $db->conn;
+
+// Validar parámetros
+$device = $_POST["device_id"] ?? null;
+$transaccion = $_POST["transaccion"] ?? null;
+$file = $_FILES["comprobante"] ?? null;
+
+if (!$device) {
+    echo json_encode(["status" => "error", "message" => "device_id requerido"]);
     exit;
 }
 
-$db = new DB();
-$id = $db->conn->real_escape_string($_POST["device_id"]);
-
-$folder = "../uploads/";
-if (!file_exists($folder)) {
-    mkdir($folder, 0777, true);
+if (!$transaccion) {
+    echo json_encode(["status" => "error", "message" => "Número de transacción requerido"]);
+    exit;
 }
 
-$filename = $id . "_" . time() . ".jpg";
-$path = $folder . $filename;
+if (!$file) {
+    echo json_encode(["status" => "error", "message" => "No se recibió archivo"]);
+    exit;
+}
 
-move_uploaded_file($_FILES["file"]["tmp_name"], $path);
+// Extensiones permitidas
+$allowed = ["jpg", "jpeg", "png", "webp"];
+$ext = strtolower(pathinfo($file["name"], PATHINFO_EXTENSION));
 
-$db->conn->query("UPDATE dispositivos SET comprobante='$filename' WHERE device_id='$id'");
+if (!in_array($ext, $allowed)) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Formato inválido. Solo JPG, PNG, WEBP"
+    ]);
+    exit;
+}
 
-echo json_encode(["status" => "comprobante_subido"]);
+// Carpeta de uploads
+$uploadDir = __DIR__ . "/uploads/";
+
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0775, true);
+}
+
+// Nombre final del archivo
+$nombreArchivo = time() . "_" . rand(1000, 9999) . "." . $ext;
+$rutaFinal = $uploadDir . $nombreArchivo;
+
+if (!move_uploaded_file($file["tmp_name"], $rutaFinal)) {
+    echo json_encode(["status" => "error", "message" => "Error al guardar archivo"]);
+    exit;
+}
+
+// Registrar en BD
+$stmt = $cn->prepare("
+    INSERT INTO pagos (device_id, transaccion, comprobante, estado, fecha)
+    VALUES (?, ?, ?, 'pendiente', NOW())
+");
+
+$stmt->bind_param("sss", $device, $transaccion, $nombreArchivo);
+
+if ($stmt->execute()) {
+    echo json_encode([
+        "status" => "ok",
+        "message" => "Comprobante enviado correctamente",
+        "file" => $nombreArchivo
+    ]);
+} else {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Error al guardar en base de datos"
+    ]);
+}
