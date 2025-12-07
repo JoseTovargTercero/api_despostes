@@ -67,7 +67,7 @@ if ($row['estado'] === "activo") {
 $ahora = date("Y-m-d H:i:s");
 
 $sql = "UPDATE dispositivos 
-        SET estado='activo', 
+        SET estado='aprobado', 
             fecha_actualizacion=?, 
             device_id=? 
         WHERE comprobante=?";
