@@ -54,10 +54,18 @@ if (!empty($row['fecha_registro'])) {
 }
 
 // ============================================
-// 3. Si ya está activo
+// 3. Si ya existe
 // ============================================
-if ($row['estado'] === "activo") {
+if ($row['estado'] === "activo" && $row['device_id'] === $device_id) {
     echo json_encode(["ok" => false, "mensaje" => "La membresía ya está activa"]);
+    exit;
+}
+
+// ============================================
+// Si ya tiene device_id y no coincide, bloqueo
+// ============================================
+if (!empty($row['device_id']) && $row['device_id'] !== $device_id) {
+    echo json_encode(["ok" => false, "mensaje" => "El código ya está activado para otro dispositivo"]);
     exit;
 }
 
